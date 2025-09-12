@@ -1,18 +1,17 @@
-server:
-  port: 8080
-
 spring:
+  application:
+    name: backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/app
+    url: jdbc:postgresql://localhost:5433/app
     username: user
     password: pass
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+server:
+  port: 8080
+  servlet:
+    context-path: /api
