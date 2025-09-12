@@ -1,0 +1,16 @@
+# root
+.DS_Store
+.env
+
+# backend
+backend/target
+backend/.idea
+
+# frontend
+web/node_modules
+web/.nuxt
+web/.output
+web/.idea
+
+# other
+dist
