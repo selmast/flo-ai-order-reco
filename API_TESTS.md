@@ -14,3 +14,10 @@ curl -s http://localhost:8081/api/orders/1 | jq .
 curl -s -X POST http://localhost:8081/api/orders \
 -H 'Content-Type: application/json' \
 -d '{"items":[{"productId":1,"quantity":1},{"productId":2,"quantity":2}]}' | jq .
+
+
+## Recommendations
+curl -s "http://localhost:8081/api/recommendations/1?limit=5" | jq .
+curl -s -X POST "http://localhost:8081/api/recommendations/1/feedback" \
+-H "Content-Type: application/json" \
+-d '{"productId":3,"action":"added_to_cart"}'
