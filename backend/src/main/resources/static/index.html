@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>FloAI Order Reco – Demo</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        body { font: 14px/1.4 system-ui, sans-serif; margin: 24px; }
+        h1 { margin-top: 0; }
+        .row { display:flex; gap:16px; align-items: center; flex-wrap:wrap; }
+        pre { background:#f6f8fa; padding:12px; border-radius:8px; overflow:auto; }
+        button { padding:8px 12px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; }
+        button:hover { background:#f0f0f0; }
+        input { padding:8px; border:1px solid #ddd; border-radius:8px; width:120px; }
+        .card { border:1px solid #eee; border-radius:12px; padding:12px; margin:8px 0; }
+    </style>
+</head>
+<body>
+<h1>FloAI Order Recommendations (Demo)</h1>
+
+<div class="row">
+    <label>Order ID: <input id="orderId" value="1" /></label>
+    <label>Limit: <input id="limit" value="5" /></label>
+    <button id="btnLoad">Load Recommendations</button>
+</div>
+
+<div id="recs"></div>
+
+<h3>Products</h3>
+<pre id="products">loading…</pre>
+
+<script>
+    async function detectBase() {
+        const hosts = [
+            `${location.protocol}//${location.hostname}:8081`,
+            location.origin,                      // if you're serving the page from the same host
+            "http://localhost:8081"
+        ];
+        const prefixes = ["", "/api"];
+
+        for (const h of hosts) {
+            for (const p of prefixes) {
+                const candidate = h.replace(/\/$/, "") + p;
+                try {
+                    // Try something cheap that exists in our app (products)
+                    const r = await fetch(`${candidate}/products`, { method: "GET" });
+                    if (r.ok || r.status === 200) return candidate;
+                } catch (_) { /* try next */ }
+            }
+        }
+        throw new Error("Backend not reachable");
+    }
+
+    let base;
+
+    async function getJSON(url, opts) {
+        const r = await fetch(url, opts);
+        if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+        return r.json();
+    }
+
+    async function loadProducts() {
+        try {
+            const data = await getJSON(`${base}/products`);
+            products.textContent = JSON.stringify(data, null, 2);
+        } catch (e) { products.textContent = e.message; }
+    }
+
+    async function loadRecs() {
+        const orderId = document.getElementById("orderId").value;
+        const limit = document.getElementById("limit").value;
+        const container = document.getElementById("recs");
+        container.innerHTML = "Loading…";
+        try {
+            const data = await getJSON(`${base}/recommendations/${orderId}?limit=${limit}`);
+            container.innerHTML = "";
+            if (!data.length) container.textContent = "(no recommendations)";
+            data.forEach(item => {
+                const el = document.createElement("div");
+                el.className = "card";
+                el.innerHTML = `<b>${item.name ?? "(id " + item.productId + ")"}</b>
+          <div>Brand: ${item.brand ?? "-"}</div>
+          <div>Category: ${item.category ?? "-"}</div>
+          <div>Score: ${item.score}</div>
+          <button data-id="${item.productId}">👍 Added to cart (feedback)</button>`;
+                el.querySelector("button").onclick = async (ev) => {
+                    ev.target.disabled = true;
+                    await fetch(`${base}/recommendations/${orderId}/feedback`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ productId: item.productId, action: "added_to_cart" })
+                    });
+                    await loadRecs(); // refresh scores
+                };
+                container.appendChild(el);
+            });
+        } catch (e) { container.textContent = e.message; }
+    }
+
+    (async () => {
+        base = await detectBase();
+        btnLoad.onclick = loadRecs;
+        await loadProducts();
+        await loadRecs();
+    })();
+</script>
+
+</body>
+</html>
