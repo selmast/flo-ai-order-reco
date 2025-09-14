@@ -2,18 +2,54 @@ name: CI
 
 on:
   push:
+    branches: [ main ]
   pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: floai
+          POSTGRES_USER: flo
+          POSTGRES_PASSWORD: flo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U flo -d floai"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
+
+      - name: Wait for Postgres
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+          for i in {1..30}; do
+            pg_isready -h 127.0.0.1 -p 5432 -U flo -d floai && break
+            echo "Waiting for Postgres ($i/30) ..."
+            sleep 2
+          done
+
       - name: Build & test backend
         working-directory: backend
-        run: mvn -B -e -DskipTests=false test
+        run: |
+          mvn -B \
+            -Dspring.datasource.url=jdbc:postgresql://localhost:5432/floai \
+            -Dspring.datasource.username=flo \
+            -Dspring.datasource.password=flo \
+            -DskipTests=false \
+            test
