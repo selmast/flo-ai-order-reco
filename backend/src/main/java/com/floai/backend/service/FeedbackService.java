@@ -5,6 +5,9 @@ import com.floai.backend.repository.FeedbackRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -70,18 +73,50 @@ public class FeedbackService {
     @Transactional(readOnly = true)
     public Map<Long, Double> getAllScores() {
         Map<Long, Double> out = new HashMap<>();
-        for (var a : repo.aggregateCounts()) {
-            long viewed      = n(a.getViewed());
-            long ignored     = n(a.getIgnored());
-            long addedToCart = n(a.getAddedToCart());
-            long purchased   = n(a.getPurchased());
-            double score = viewed * 0.1
-                    + ignored * -0.2
-                    + addedToCart * 0.5
-                    + purchased * 1.0;
-            out.put(a.getProductId(), score);
+        for (var a : repo.aggregateCountsAll()) {
+            out.put(a.getProductId(), scoreOf(a));
         }
         return out;
+    }
+
+    /**
+     * All product scores limited to the last N days.
+     * Uses Instant-based filtering to work on both Postgres & H2.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Double> getAllScoresSinceDays(int days) {
+        Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
+        Map<Long, Double> out = new HashMap<>();
+        for (var a : repo.aggregateCountsSince(since)) {
+            out.put(a.getProductId(), scoreOf(a));
+        }
+        return out;
+    }
+
+    /**
+     * Scores for a specific set of product IDs limited to the last N days.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Double> getScoresForProductsSinceDays(Collection<Long> productIds, int days) {
+        Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
+        Map<Long, Double> out = new HashMap<>();
+        for (var a : repo.aggregateCountsForProductsSince(productIds, since)) {
+            out.put(a.getProductId(), scoreOf(a));
+        }
+        return out;
+    }
+
+    // ---------- helpers ----------
+
+    private static double scoreOf(FeedbackRepository.FeedbackAggregate a) {
+        long viewed      = n(a.getViewed());
+        long ignored     = n(a.getIgnored());
+        long addedToCart = n(a.getAddedToCart());
+        long purchased   = n(a.getPurchased());
+        return viewed * 0.1
+                + ignored * -0.2
+                + addedToCart * 0.5
+                + purchased * 1.0;
     }
 
     private static long n(Long v) { return v == null ? 0L : v; }

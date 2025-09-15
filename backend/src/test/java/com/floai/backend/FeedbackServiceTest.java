@@ -65,7 +65,7 @@ public class FeedbackServiceTest {
             public Long getAddedToCart()  { return 1L; }
             public Long getPurchased()    { return 3L; }
         };
-        when(repo.aggregateCounts()).thenReturn(List.of(agg));
+        when(repo.aggregateCountsAll()).thenReturn(List.of(agg));
 
         FeedbackService service = new FeedbackService(repo);
         var map = service.getAllScores();
