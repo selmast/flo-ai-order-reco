@@ -1,47 +1,33 @@
 package com.floai.backend.dto;
 
-public class PopularItemDto {
-    private Long productId;
-    private String name;
-    private String brand;
-    private String category;
-    private double score;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-    private long viewed;
-    private long ignored;
-    private long addedToCart;
-    private long purchased;
+@Schema(description = "Popular product item with feedback statistics and score")
+public record PopularItemDto(
+        @Schema(description = "Product ID", example = "1")
+        Long productId,
 
-    public PopularItemDto(Long productId, String name, String brand, String category,
-                          double score, long viewed, long ignored, long addedToCart, long purchased) {
-        this.productId = productId;
-        this.name = name;
-        this.brand = brand;
-        this.category = category;
-        this.score = score;
-        this.viewed = viewed;
-        this.ignored = ignored;
-        this.addedToCart = addedToCart;
-        this.purchased = purchased;
-    }
+        @Schema(description = "Product name", example = "Running Shoes")
+        String name,
 
-    public Long getProductId() { return productId; }
-    public String getName() { return name; }
-    public String getBrand() { return brand; }
-    public String getCategory() { return category; }
-    public double getScore() { return score; }
-    public long getViewed() { return viewed; }
-    public long getIgnored() { return ignored; }
-    public long getAddedToCart() { return addedToCart; }
-    public long getPurchased() { return purchased; }
+        @Schema(description = "Brand of the product", example = "Nike")
+        String brand,
 
-    public void setProductId(Long productId) { this.productId = productId; }
-    public void setName(String name) { this.name = name; }
-    public void setBrand(String brand) { this.brand = brand; }
-    public void setCategory(String category) { this.category = category; }
-    public void setScore(double score) { this.score = score; }
-    public void setViewed(long viewed) { this.viewed = viewed; }
-    public void setIgnored(long ignored) { this.ignored = ignored; }
-    public void setAddedToCart(long addedToCart) { this.addedToCart = addedToCart; }
-    public void setPurchased(long purchased) { this.purchased = purchased; }
-}
+        @Schema(description = "Category of the product", example = "Sportswear")
+        String category,
+
+        @Schema(description = "Aggregated score based on feedback signals", example = "4.75")
+        double score,
+
+        @Schema(description = "Number of times viewed", example = "120")
+        long viewed,
+
+        @Schema(description = "Number of times ignored", example = "30")
+        long ignored,
+
+        @Schema(description = "Number of times added to cart", example = "25")
+        long addedToCart,
+
+        @Schema(description = "Number of times purchased", example = "10")
+        long purchased
+) {}

@@ -1,5 +1,6 @@
 package com.floai.backend.controller;
 
+import com.floai.backend.dto.PopularItemDto;
 import com.floai.backend.dto.RecommendationFeedbackRequest;
 import com.floai.backend.dto.RecommendationItemDto;
 import com.floai.backend.model.Order;
@@ -120,13 +121,69 @@ public class RecommendationController {
         return ResponseEntity.ok(recs);
     }
 
+    // GET /recommendations/popular?limit=10
+    @GetMapping("/popular")
+    public ResponseEntity<List<PopularItemDto>> popular(
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "limit must be at least 1")
+            @Max(value = 50, message = "limit must be at most 50")
+            int limit
+    ) {
+        List<PopularItemDto> items = new ArrayList<>();
+
+        for (Product p : productRepository.findAll()) {
+            if (p == null || p.getId() == null) continue;
+
+            var f = feedbackService.get(p.getId());
+            long viewed = f.viewed;
+            long ignored = f.ignored;
+            long addedToCart = f.addedToCart;
+            long purchased = f.purchased;
+
+            // CTR-like score with light volume weighting
+            long pos = addedToCart + purchased;
+            long neg = ignored;
+            double score;
+            if (pos + neg == 0) {
+                score = 0.0;
+            } else {
+                double ctr = (double) pos / (pos + neg); // 0..1
+                double volumeWeight = Math.min(1.0, Math.log10(Math.max(1, pos + neg)) / 2.0);
+                score = ctr * (0.5 + 0.5 * volumeWeight);
+            }
+            double rounded = BigDecimal.valueOf(score).setScale(3, RoundingMode.HALF_UP).doubleValue();
+
+            // IMPORTANT: PopularItemDto is a record with 9 args
+            items.add(new PopularItemDto(
+                    p.getId(),
+                    p.getName(),
+                    p.getBrand(),
+                    p.getCategory(),
+                    rounded,
+                    viewed,
+                    ignored,
+                    addedToCart,
+                    purchased
+            ));
+        }
+
+        items.sort(
+                Comparator.comparingDouble(PopularItemDto::score).reversed()
+                        .thenComparing(PopularItemDto::name, Comparator.nullsLast(String::compareToIgnoreCase))
+        );
+
+        if (limit > 0 && limit < items.size()) {
+            items = items.subList(0, limit);
+        }
+        return ResponseEntity.ok(items);
+    }
+
     // POST /recommendations/{orderId}/feedback
     @PostMapping(value = "/{orderId}/feedback", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> recordFeedback(@PathVariable Long orderId,
                                                @Valid @RequestBody RecommendationFeedbackRequest req) {
         // We don't use orderId yet; feedback aggregates per product
         feedbackService.record(req.getProductId(), req.getAction());
-        // 202: accepted, processed asynchronously in spirit
         return ResponseEntity.accepted().build();
     }
 }

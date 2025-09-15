@@ -11,6 +11,9 @@ import java.util.List;
 
 public interface FeedbackRepository extends JpaRepository<FeedbackEvent, Long> {
 
+
+    List<FeedbackEvent> findByProductId(Long productId);
+
     @Query("""
         SELECT COUNT(f) FROM FeedbackEvent f
         WHERE f.productId = :productId AND LOWER(f.action) = LOWER(:action)
