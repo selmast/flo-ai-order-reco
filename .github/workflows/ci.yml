@@ -2,35 +2,47 @@ name: CI
 
 on:
   push:
+    paths:
+      - 'backend/**'
   pull_request:
+    paths:
+      - 'backend/**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: backend   # <— build in the backend module
+        working-directory: backend
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 21 (Temurin) with Maven cache
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
-      - name: Build & test
-        run: mvn -B verify
-        env:
-          SPRING_PROFILES_ACTIVE: test
+      - name: Build & test (unit)
+        run: mvn -B -ntp -U clean verify
 
-      # Optional: always publish test reports on failure for easier debugging
       - name: Upload surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: backend/target/surefire-reports
+          path: |
+            backend/target/surefire-reports/**
+            backend/target/failsafe-reports/**
+          if-no-files-found: ignore
+
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/**
+          if-no-files-found: ignore
