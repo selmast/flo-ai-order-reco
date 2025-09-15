@@ -1,7 +1,9 @@
 package com.floai.backend.model;
 
 import jakarta.persistence.*;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(hidden = true)
 @Entity
 @Table(name = "products")
 public class Product {

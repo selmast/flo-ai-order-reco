@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(hidden = true)
 @Entity
 @Table(name = "orders") // 'order' is reserved in many DBs
 public class Order {

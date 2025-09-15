@@ -2,6 +2,7 @@ package com.floai.backend.controller;
 
 import com.floai.backend.model.Product;
 import com.floai.backend.repository.ProductRepository;
+import com.floai.backend.dto.ProductDto;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +18,15 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<Product> getAll() {
-        return productRepository.findAll();
+    public List<ProductDto> getAll() {
+        return productRepository.findAll().stream()
+                .map(p -> new ProductDto(
+                        p.getId(),
+                        p.getName(),
+                        p.getBrand(),
+                        p.getCategory(),
+                        p.getDescription()
+                ))
+                .toList();
     }
 }

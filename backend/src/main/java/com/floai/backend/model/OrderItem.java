@@ -2,7 +2,9 @@ package com.floai.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(hidden = true)
 @Entity
 @Table(name = "order_items")
 public class OrderItem {

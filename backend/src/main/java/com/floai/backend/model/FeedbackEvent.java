@@ -1,16 +1,23 @@
 package com.floai.backend.model;
 
 import jakarta.persistence.*;
-import java.time.OffsetDateTime;
+import lombok.Builder;
 
+import java.time.OffsetDateTime;
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(hidden = true)
 @Entity
 @Table(
         name = "feedback_events",
         indexes = {
-                @Index(name = "idx_feedback_events_product_action", columnList = "productId, action"),
-                @Index(name = "idx_feedback_events_created_at", columnList = "createdAt")
+                @Index(name = "idx_feedback_events_product_action", columnList = "product_id, action"),
+                @Index(name = "idx_feedback_events_created_at", columnList = "created_at")
         }
 )
+
+
+@Builder
 public class FeedbackEvent {
 
     @Id

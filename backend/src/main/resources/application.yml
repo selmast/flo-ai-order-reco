@@ -2,16 +2,25 @@ spring:
   application:
     name: backend
   datasource:
-    url: jdbc:postgresql://localhost:5433/app
+    url: jdbc:postgresql://localhost:5433/floai
     username: user
     password: pass
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
-
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
 server:
   port: 8081
   servlet:
     context-path: /
+
+
+springdoc:
+  packages-to-scan: com.floai.backend.controller
+  paths-to-match: /**
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui
