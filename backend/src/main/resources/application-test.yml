@@ -1,14 +1,18 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:tc:postgresql:16.4:///reco_db
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
+    properties:
+      hibernate.format_sql: true
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
+  test:
+    database:
+      replace: NONE   # ensures @DataJpaTest won't swap in H2
 
 logging:
   level:

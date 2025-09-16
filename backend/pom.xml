@@ -21,20 +21,33 @@
 		<java.version>21</java.version>
 	</properties>
 
+	<!-- Manage Testcontainers versions centrally -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>1.19.8</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
-		<!-- Spring Web (controllers) -->
+		<!-- Spring Web -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 
-		<!-- Spring Data JPA (REMOVE test scope; needed at compile time) -->
+		<!-- Spring Data JPA -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
-		<!-- Bean Validation (you had a warning about missing provider) -->
+		<!-- Bean Validation -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
@@ -50,30 +63,24 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
-		<!-- OpenAPI / Swagger UI for Spring MVC (compatible with Spring Boot 3.5.x / Spring 6.2.x) -->
+		<!-- OpenAPI / Swagger -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.6.0</version>
 		</dependency>
-
-		<!-- Explicitly include the annotations JAR used by @Schema, @Operation, etc. -->
 		<dependency>
 			<groupId>io.swagger.core.v3</groupId>
 			<artifactId>swagger-annotations</artifactId>
 			<version>2.2.25</version>
 		</dependency>
 
-
-		<!-- DB drivers -->
+		<!-- DB Driver -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-
-
-
 
 		<!-- Lombok -->
 		<dependency>
@@ -83,19 +90,42 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- Test stack (JUnit 5, AssertJ, Mockito, etc.) -->
+		<!-- Test stack -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 
-		<!-- H2 only for tests (profile=test) -->
+		<!-- Testcontainers (versions provided by BOM above) -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- H2 only for unit tests (optional) -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>jdbc</artifactId>
+		</dependency>
+
+        <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>jdbc</artifactId>
+          <scope>test</scope>
+        </dependency>
+
 	</dependencies>
 
 	<build>
@@ -105,23 +135,11 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 
-			<!-- JaCoCo (your config kept) -->
+			<!-- JaCoCo -->
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version>
-				<configuration>
-					<includes>
-						<include>com/floai/backend/*</include>
-						<include>com/floai/backend/**</include>
-					</includes>
-					<excludes>
-						<exclude>net/bytebuddy/**</exclude>
-						<exclude>org/mockito/**</exclude>
-						<exclude>**/*$MockitoMock$*</exclude>
-						<exclude>**/*$ByteBuddy$*</exclude>
-					</excludes>
-				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -136,12 +154,32 @@
 						</goals>
 					</execution>
 				</executions>
+				<configuration>
+					<includes>
+						<include>com/floai/backend/*</include>
+						<include>com/floai/backend/**</include>
+					</includes>
+					<excludes>
+						<exclude>net/bytebuddy/**</exclude>
+						<exclude>org/mockito/**</exclude>
+						<exclude>**/*$MockitoMock$*</exclude>
+						<exclude>**/*$ByteBuddy$*</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 
+			<!-- Surefire: run *Test and *IT classes -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.3</version>
+				<configuration>
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*IT.java</include>
+						<include>**/*ITCase.java</include>
+					</includes>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

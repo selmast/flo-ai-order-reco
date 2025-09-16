@@ -1,6 +1,7 @@
 package com.floai.backend.controller;
 
 import com.floai.backend.dto.PopularItemDto;
+import com.floai.backend.dto.ProductDto;
 import com.floai.backend.dto.RecommendationFeedbackRequest;
 import com.floai.backend.dto.RecommendationItemDto;
 import com.floai.backend.model.Order;
@@ -8,6 +9,8 @@ import com.floai.backend.model.Product;
 import com.floai.backend.repository.OrderRepository;
 import com.floai.backend.repository.ProductRepository;
 import com.floai.backend.service.FeedbackService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -22,8 +25,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(value = "/recommendations", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(
+        value = {"/api/recommendations", "/recommendations"},
+        produces = MediaType.APPLICATION_JSON_VALUE
+)
 @Validated
+@Tag(name = "Recommendations")
 public class RecommendationController {
 
     private final OrderRepository orderRepository;
@@ -38,7 +45,9 @@ public class RecommendationController {
         this.feedbackService = feedbackService;
     }
 
-    // GET /recommendations/{orderId}?limit=5
+    // GET /api/recommendations/{orderId}?limit=5
+    @Operation(summary = "Order-aware recommendations",
+            description = "Returns products recommended for a given order, ranked by score.")
     @GetMapping("/{orderId}")
     public ResponseEntity<List<RecommendationItemDto>> forOrder(
             @PathVariable Long orderId,
@@ -94,7 +103,6 @@ public class RecommendationController {
                 score += 0.20 * ctr;
             }
 
-            // round for stable ordering/response
             double rounded = BigDecimal.valueOf(score)
                     .setScale(3, RoundingMode.HALF_UP)
                     .doubleValue();
@@ -121,9 +129,71 @@ public class RecommendationController {
         return ResponseEntity.ok(recs);
     }
 
-    // GET /recommendations/popular?limit=10
+    // GET /api/recommendations/popular?limit=10  -> return ProductDto (id, name, description, brand, category)
+    @Operation(summary = "Popular products (simple)",
+            description = "Returns a ranked list of popular products as ProductDto.")
     @GetMapping("/popular")
-    public ResponseEntity<List<PopularItemDto>> popular(
+    public ResponseEntity<List<ProductDto>> popularSimple(
+            @RequestParam(defaultValue = "10")
+            @Min(value = 1, message = "limit must be at least 1")
+            @Max(value = 50, message = "limit must be at most 50")
+            int limit
+    ) {
+        // rank products by the same popularity score as detailed stats
+        List<Map.Entry<Product, Double>> ranked = new ArrayList<>();
+
+        for (Product p : productRepository.findAll()) {
+            if (p == null || p.getId() == null) continue;
+
+            var f = feedbackService.get(p.getId());
+            long pos = f.addedToCart + f.purchased;
+            long neg = f.ignored;
+
+            double score;
+            if (pos + neg == 0) {
+                score = 0.0;
+            } else {
+                double ctr = (double) pos / (pos + neg); // 0..1
+                double volumeWeight = Math.min(1.0, Math.log10(Math.max(1, pos + neg)) / 2.0);
+                score = ctr * (0.5 + 0.5 * volumeWeight);
+            }
+            double rounded = BigDecimal.valueOf(score).setScale(3, RoundingMode.HALF_UP).doubleValue();
+            ranked.add(Map.entry(p, rounded));
+        }
+
+        ranked.sort((a, b) -> {
+            int cmp = Double.compare(b.getValue(), a.getValue()); // desc by score
+            if (cmp != 0) return cmp;
+            String n1 = a.getKey().getName();
+            String n2 = b.getKey().getName();
+            if (n1 == null && n2 == null) return 0;
+            if (n1 == null) return 1;
+            if (n2 == null) return -1;
+            return n1.compareToIgnoreCase(n2);
+        });
+
+        if (limit > 0 && limit < ranked.size()) {
+            ranked = ranked.subList(0, limit);
+        }
+
+        List<ProductDto> out = ranked.stream()
+                .map(e -> new ProductDto(
+                        e.getKey().getId(),
+                        e.getKey().getName(),
+                        e.getKey().getDescription(),
+                        e.getKey().getBrand(),
+                        e.getKey().getCategory()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(out);
+    }
+
+    // GET /api/recommendations/popular/stats?limit=10  -> detailed metrics (PopularItemDto)
+    @Operation(summary = "Popular products (detailed)",
+            description = "Returns popularity score and counters per product.")
+    @GetMapping("/popular/stats")
+    public ResponseEntity<List<PopularItemDto>> popularDetailed(
             @RequestParam(defaultValue = "10")
             @Min(value = 1, message = "limit must be at least 1")
             @Max(value = 50, message = "limit must be at most 50")
@@ -140,7 +210,6 @@ public class RecommendationController {
             long addedToCart = f.addedToCart;
             long purchased = f.purchased;
 
-            // CTR-like score with light volume weighting
             long pos = addedToCart + purchased;
             long neg = ignored;
             double score;
@@ -153,7 +222,6 @@ public class RecommendationController {
             }
             double rounded = BigDecimal.valueOf(score).setScale(3, RoundingMode.HALF_UP).doubleValue();
 
-            // IMPORTANT: PopularItemDto is a record with 9 args
             items.add(new PopularItemDto(
                     p.getId(),
                     p.getName(),
@@ -178,11 +246,13 @@ public class RecommendationController {
         return ResponseEntity.ok(items);
     }
 
-    // POST /recommendations/{orderId}/feedback
+    // POST /api/recommendations/{orderId}/feedback
+    @Operation(summary = "Record recommendation feedback",
+            description = "Adds a feedback signal (view, add-to-cart, purchase, ignore) for a product.")
     @PostMapping(value = "/{orderId}/feedback", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Void> recordFeedback(@PathVariable Long orderId,
                                                @Valid @RequestBody RecommendationFeedbackRequest req) {
-        // We don't use orderId yet; feedback aggregates per product
+        // Note: we keep orderId for future personalization; aggregation is per product
         feedbackService.record(req.getProductId(), req.getAction());
         return ResponseEntity.accepted().build();
     }

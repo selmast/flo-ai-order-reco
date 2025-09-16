@@ -46,3 +46,6 @@ jobs:
           name: jacoco-report
           path: backend/target/site/jacoco/**
           if-no-files-found: ignore
+
+      - name: Test (with Testcontainers)
+        run: mvn -B -Dspring.profiles.active=test test
