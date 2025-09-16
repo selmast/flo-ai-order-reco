@@ -2,6 +2,8 @@ package com.floai.backend.service;
 
 import com.floai.backend.model.FeedbackEvent;
 import com.floai.backend.repository.FeedbackRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,8 +33,17 @@ public class FeedbackService {
 
     private final FeedbackRepository repo;
 
+    // Micrometer registry is optional so existing tests/app still run without it
+    private MeterRegistry registry;
+
     public FeedbackService(FeedbackRepository repo) {
         this.repo = repo;
+    }
+
+    // Setter injection keeps the primary constructor unchanged (safer for existing tests)
+    @Autowired(required = false)
+    public void setMeterRegistry(MeterRegistry registry) {
+        this.registry = registry;
     }
 
     /** Persist a single feedback event (action is case-/underscore-insensitive). */
@@ -46,7 +57,14 @@ public class FeedbackService {
     public void record(Long productId, String action, Long orderId) {
         if (productId == null || action == null || action.isBlank()) return;
         String a = normalizeAction(action);
+
         repo.save(new FeedbackEvent(productId, orderId, a));
+
+        // Metrics: increment a counter per action (low-cardinality tag)
+        if (registry != null) {
+            // Counter name: feedback_events_total{action="viewed|ignored|added_to_cart|purchased"}
+            registry.counter("feedback_events_total", "action", a).increment();
+        }
     }
 
     /** Aggregate counters for a product by querying the DB. */

@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: floai-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # On macOS/Windows with Docker Desktop, this points back to your host
+      - targets: ["host.docker.internal:8081"]

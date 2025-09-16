@@ -9,6 +9,7 @@ import com.floai.backend.model.Product;
 import com.floai.backend.repository.OrderRepository;
 import com.floai.backend.repository.ProductRepository;
 import com.floai.backend.service.FeedbackService;
+import io.micrometer.core.annotation.Timed; // <-- added
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -48,6 +49,7 @@ public class RecommendationController {
     // GET /api/recommendations/{orderId}?limit=5
     @Operation(summary = "Order-aware recommendations",
             description = "Returns products recommended for a given order, ranked by score.")
+    @Timed(value = "reco_for_order_timer", description = "Time to compute order-aware recommendations") // <-- added
     @GetMapping("/{orderId}")
     public ResponseEntity<List<RecommendationItemDto>> forOrder(
             @PathVariable Long orderId,
@@ -132,6 +134,7 @@ public class RecommendationController {
     // GET /api/recommendations/popular?limit=10  -> return ProductDto (id, name, description, brand, category)
     @Operation(summary = "Popular products (simple)",
             description = "Returns a ranked list of popular products as ProductDto.")
+    @Timed(value = "reco_popular_timer", description = "Time to compute popular items") // <-- added
     @GetMapping("/popular")
     public ResponseEntity<List<ProductDto>> popularSimple(
             @RequestParam(defaultValue = "10")
@@ -192,6 +195,7 @@ public class RecommendationController {
     // GET /api/recommendations/popular/stats?limit=10  -> detailed metrics (PopularItemDto)
     @Operation(summary = "Popular products (detailed)",
             description = "Returns popularity score and counters per product.")
+    @Timed(value = "reco_popular_stats_timer", description = "Time to compute popular items (detailed)") // <-- added
     @GetMapping("/popular/stats")
     public ResponseEntity<List<PopularItemDto>> popularDetailed(
             @RequestParam(defaultValue = "10")
