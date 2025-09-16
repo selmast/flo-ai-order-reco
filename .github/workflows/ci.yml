@@ -2,50 +2,56 @@ name: CI
 
 on:
   push:
-    paths:
-      - 'backend/**'
+    branches: [ main ]
   pull_request:
-    paths:
-      - 'backend/**'
+
+# run mvn in the backend/ module
+defaults:
+  run:
+    shell: bash
+    working-directory: backend
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21 (Temurin) with Maven cache
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
 
-      - name: Build & test (unit)
-        run: mvn -B -ntp -U clean verify
+      # Sanity check: Docker must be available for Testcontainers
+      - name: Docker info
+        run: docker info
 
+      # Optional but speeds up first run (your tests use postgres:16 via jdbc:tc)
+      - name: Pre-pull Postgres image
+        run: docker pull postgres:16-alpine
+
+      # Run tests with the test profile (jdbc:tc Postgres)
+      - name: Run tests
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          # Optional speed-ups; safe on ephemeral CI runners:
+          TESTCONTAINERS_CHECKS_DISABLE: 'true'
+        run: mvn -B -Dspring.profiles.active=test test
+
+      # Build the jar if tests passed
+      - name: Package
+        if: success()
+        run: mvn -B -DskipTests package
+
+      # Always upload test reports to help debugging
       - name: Upload surefire reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: |
-            backend/target/surefire-reports/**
-            backend/target/failsafe-reports/**
-          if-no-files-found: ignore
-
-      - name: Upload JaCoCo report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          path: backend/target/site/jacoco/**
-          if-no-files-found: ignore
-
-      - name: Test (with Testcontainers)
-        run: mvn -B -Dspring.profiles.active=test test
+          path: backend/target/surefire-reports
