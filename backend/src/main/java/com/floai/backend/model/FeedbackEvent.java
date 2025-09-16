@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 )
 
 
-@Builder
+//@Builder
 public class FeedbackEvent {
 
     @Id
