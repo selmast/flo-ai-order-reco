@@ -2,6 +2,8 @@ package com.floai.backend.controller;
 
 import com.floai.backend.dto.RecommendationItemDto;
 import com.floai.backend.model.Order;
+import com.floai.backend.model.OrderItem;
+import com.floai.backend.model.Product;
 import com.floai.backend.repository.OrderRepository;
 import com.floai.backend.service.RecommendationEngine;
 import io.micrometer.core.annotation.Timed;
@@ -15,8 +17,19 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
 
 @RestController
+@CrossOrigin(
+        origins = {
+                "http://localhost:5173", "http://127.0.0.1:5173",
+                "http://localhost:3000", "http://127.0.0.1:3000"
+        },
+        methods = { RequestMethod.GET, RequestMethod.OPTIONS },
+        allowedHeaders = "*",
+        maxAge = 3600,
+        allowCredentials = "false"
+)
 @RequestMapping(value = "/tracking", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 @Tag(name = "Tracking")
@@ -31,32 +44,50 @@ public class TrackingController {
         this.recommendationEngine = recommendationEngine;
     }
 
-    /** Minimal order DTO that matches your model (id + status). */
-    public record TrackingOrderDto(Long id, String status) {}
+    /** Order line shown on the page. */
+    public record TrackingItemDto(Long productId, String name, String brand, String category, int qty) {}
+
+    /** Minimal order DTO + items to render the order section. */
+    public record TrackingOrderDto(Long id, String status, List<TrackingItemDto> items) {}
 
     /** Payload returned to the tracking page: order info + recs. */
     public record TrackingPageDto(TrackingOrderDto order,
                                   List<RecommendationItemDto> recommendations) {}
 
-    @Operation(
-            summary = "Tracking page data (order + recommendations)",
-            operationId = "trackingPage"
-    )
+    @Operation(summary = "Tracking page data (order + recommendations)", operationId = "trackingPage")
     @Timed(value = "tracking_page_timer", description = "Time to build tracking page payload")
     @GetMapping("/{orderId}")
     public ResponseEntity<TrackingPageDto> page(
             @PathVariable Long orderId,
-            @RequestParam(defaultValue = "6")
-            @Min(1) @Max(50) int limit
+            @RequestParam(defaultValue = "6") @Min(1) @Max(50) int limit
     ) {
         Order order = orderRepository.findDetailedById(orderId).orElse(null);
         if (order == null) {
             return ResponseEntity.notFound().build();
         }
 
-        TrackingOrderDto orderDto = new TrackingOrderDto(order.getId(), order.getStatus());
+        // map order items -> lightweight DTOs
+        List<TrackingItemDto> items = order.getItems().stream()
+                .filter(Objects::nonNull)
+                .map(TrackingController::toDto)
+                .toList();
+
+        TrackingOrderDto orderDto = new TrackingOrderDto(order.getId(), order.getStatus(), items);
         List<RecommendationItemDto> recs = recommendationEngine.forOrder(orderId, limit);
 
         return ResponseEntity.ok(new TrackingPageDto(orderDto, recs));
+    }
+
+    private static TrackingItemDto toDto(OrderItem it) {
+        Product p = it.getProduct();
+        Long   productId = (p != null ? p.getId()       : null);
+        String name      = (p != null ? p.getName()     : null);
+        String brand     = (p != null ? p.getBrand()    : null);
+        String category  = (p != null ? p.getCategory() : null);
+
+        // getQuantity() is primitive int; clamp to at least 1 so UI always shows a number
+        int qty = Math.max(1, it.getQuantity());
+
+        return new TrackingItemDto(productId, name, brand, category, qty);
     }
 }
