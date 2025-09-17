@@ -12,6 +12,12 @@ spring:
   flyway:
     enabled: true
 
+  # Optional: if/when you run Redis (fallback remains Caffeine via CacheConfig)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
 server:
   port: 8081
   servlet:
@@ -19,7 +25,13 @@ server:
 
 springdoc:
   packages-to-scan: com.floai.backend.controller
-  paths-to-match: /**
+  paths-to-match:
+    - /recommendations/**
+    - /feedback/**
+    - /tracking/**
+    # add others when you expose them:
+    # - /products/**
+    # - /orders/**
   api-docs:
     enabled: true
   swagger-ui:
@@ -33,15 +45,32 @@ management:
   endpoint:
     health:
       show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true           # <-- new name in Boot 3.5
   metrics:
     tags:
       application: flo-ai-order-reco
-    export:
-      prometheus:
-        enabled: true
-
     distribution:
+      # enable histograms for timers we use
       percentiles-histogram:
-        reco_popular_timer: false
+        reco_popular_timer: true
+        reco_popular_stats_timer: true
+        reco_for_order_timer: true
+        tracking_page_timer: true
+        feedback_stats_timer: true
+      # common percentiles
+      percentiles:
+        reco_popular_timer: [0.9, 0.95, 0.99]
+        reco_popular_stats_timer: [0.9, 0.95, 0.99]
+        reco_for_order_timer: [0.9, 0.95, 0.99]
+        tracking_page_timer: [0.9, 0.95, 0.99]
+        feedback_stats_timer: [0.9, 0.95, 0.99]
+      # SLO buckets to show in Prometheus
       slo:
-        reco_popular_timer: [50ms,100ms,250ms,500ms,1s,2s]
+        reco_popular_timer: [50ms, 100ms, 250ms, 500ms, 1s, 2s]
+        reco_popular_stats_timer: [50ms, 100ms, 250ms, 500ms, 1s, 2s]
+        reco_for_order_timer: [50ms, 100ms, 250ms, 500ms, 1s, 2s]
+        tracking_page_timer: [50ms, 100ms, 250ms, 500ms, 1s, 2s]
+        feedback_stats_timer: [50ms, 100ms, 250ms, 500ms, 1s, 2s]

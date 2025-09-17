@@ -19,7 +19,7 @@ import java.math.RoundingMode;
 import java.util.*;
 
 @RestController
-@RequestMapping(value = {"/api/feedback", "/feedback"}, produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value =  "/feedback", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 @Tag(name = "Feedback Analytics")
 public class FeedbackAnalyticsController {

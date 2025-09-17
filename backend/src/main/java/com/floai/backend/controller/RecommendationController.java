@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(
-        value = {"/api/recommendations", "/recommendations"},
+        value =  "/recommendations",
         produces = MediaType.APPLICATION_JSON_VALUE
 )
 @Validated
