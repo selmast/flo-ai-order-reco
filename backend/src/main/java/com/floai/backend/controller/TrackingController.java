@@ -1,6 +1,9 @@
 package com.floai.backend.controller;
 
 import com.floai.backend.dto.RecommendationItemDto;
+import com.floai.backend.dto.tracking.TrackingItemDto;
+import com.floai.backend.dto.tracking.TrackingOrderDto;
+import com.floai.backend.dto.tracking.TrackingPageDto;
 import com.floai.backend.model.Order;
 import com.floai.backend.model.OrderItem;
 import com.floai.backend.model.Product;
@@ -43,16 +46,6 @@ public class TrackingController {
         this.orderRepository = orderRepository;
         this.recommendationEngine = recommendationEngine;
     }
-
-    /** Order line shown on the page. */
-    public record TrackingItemDto(Long productId, String name, String brand, String category, int qty) {}
-
-    /** Minimal order DTO + items to render the order section. */
-    public record TrackingOrderDto(Long id, String status, List<TrackingItemDto> items) {}
-
-    /** Payload returned to the tracking page: order info + recs. */
-    public record TrackingPageDto(TrackingOrderDto order,
-                                  List<RecommendationItemDto> recommendations) {}
 
     @Operation(summary = "Tracking page data (order + recommendations)", operationId = "trackingPage")
     @Timed(value = "tracking_page_timer", description = "Time to build tracking page payload")

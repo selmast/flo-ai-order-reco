@@ -1,18 +1,21 @@
 spring:
   application:
     name: backend
+
   datasource:
     url: jdbc:postgresql://localhost:5433/floai
     username: user
     password: pass
+
   jpa:
     hibernate:
       ddl-auto: none
     open-in-view: false
+
   flyway:
     enabled: true
 
-  # Optional: if/when you run Redis (fallback remains Caffeine via CacheConfig)
+  # Optional: harmless if Redis isn't running
   data:
     redis:
       host: localhost
@@ -29,12 +32,11 @@ springdoc:
     - /recommendations/**
     - /feedback/**
     - /tracking/**
-    # add others when you expose them:
-    # - /products/**
-    # - /orders/**
   api-docs:
     enabled: true
+    path: /v3/api-docs
   swagger-ui:
+    enabled: true
     path: /swagger-ui
 
 management:
@@ -45,10 +47,6 @@ management:
   endpoint:
     health:
       show-details: always
-  prometheus:
-    metrics:
-      export:
-        enabled: true           # <-- new name in Boot 3.5
   metrics:
     tags:
       application: flo-ai-order-reco

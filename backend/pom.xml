@@ -19,6 +19,8 @@
 
 	<properties>
 		<java.version>21</java.version>
+		<!-- keep SpringDoc aligned with Spring Framework 6.2.x (Boot 3.5.x) -->
+		<springdoc.version>2.7.0</springdoc.version>
 	</properties>
 
 	<!-- Manage Testcontainers versions centrally -->
@@ -63,16 +65,11 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
-		<!-- OpenAPI / Swagger -->
+		<!-- OpenAPI / Swagger UI (single starter; no extra swagger-annotations needed) -->
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.6.0</version>
-		</dependency>
-		<dependency>
-			<groupId>io.swagger.core.v3</groupId>
-			<artifactId>swagger-annotations</artifactId>
-			<version>2.2.25</version>
+			<version>${springdoc.version}</version>
 		</dependency>
 
 		<!-- DB Driver -->
@@ -90,43 +87,6 @@
 			<scope>provided</scope>
 		</dependency>
 
-		<!-- Test stack -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- Testcontainers (versions provided by BOM above) -->
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- H2 only for unit tests (optional) -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.testcontainers</groupId>
-			<artifactId>jdbc</artifactId>
-		</dependency>
-
-        <dependency>
-          <groupId>org.testcontainers</groupId>
-          <artifactId>jdbc</artifactId>
-          <scope>test</scope>
-        </dependency>
-
-
 		<!-- Actuator -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -139,35 +99,59 @@
 			<artifactId>micrometer-registry-prometheus</artifactId>
 		</dependency>
 
-		<!-- Structured JSON logs (Logstash encoder) -->
+		<!-- Structured JSON logs -->
 		<dependency>
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
 			<version>7.4</version>
 		</dependency>
 
+		<!-- AOP (if you use it) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 
-		<!-- Spring cache annotations (@Cacheable/@CacheEvict) -->
+		<!-- Spring Cache + Caffeine (and Redis if you wire it) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-cache</artifactId>
 		</dependency>
-
-		<!-- Fast in-memory cache for dev/test/prod small-scale -->
 		<dependency>
 			<groupId>com.github.ben-manes.caffeine</groupId>
 			<artifactId>caffeine</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
 
+		<!-- Test stack -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
